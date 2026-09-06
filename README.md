@@ -1,70 +1,112 @@
-# skillstore — an MCP server that serves runnable methods
+# skillstore
 
-A hosted [Model Context Protocol](https://modelcontextprotocol.io) server. Your coding agent asks it for a
-method for the task in front of you, and gets back a step-by-step procedure to run on your own material —
-not a chat answer, not a link.
+**Your coding agent already knows a lot. It doesn't know *how you work*.**
 
-**Endpoint:** `https://skillstore-jk.fly.dev/mcp/library` · streamable HTTP · no account, no key, no
-install.
+Ask it to rank your backlog and you get a plausible-sounding list. Ask it to review a build before you ship,
+and you get whatever it improvises that day. skillstore gives it the *method* instead — a real procedure,
+run step by step on your actual material.
+
+One line, no account, no key:
 
 ```bash
-# Claude Code
 claude mcp add --transport http skillstore https://skillstore-jk.fly.dev/mcp/library
 ```
 
-<details>
-<summary>Codex, Cursor, Grok, and anything else that speaks MCP</summary>
+---
 
-Add it wherever your editor keeps MCP servers, as a **streamable HTTP** server with the URL above and no
-auth. In Grok: `grok.com/connectors → New Connector → Custom`. Tools are discovered automatically.
-</details>
+## What it looks like
 
-## The four tools
+You type what you're doing, in your own words:
+
+> *"I have a messy backlog and I can't defend the order to anyone"*
+
+Your agent gets back a shelf, ranked, with the real thing at the top:
+
+```
+- id: rice-backlog-ranker  (stack · 3 steps)
+  RICE Backlog Ranker: Decide which features to build first: turn a messy backlog paste into a
+  defensible, RICE-scored ranking by normalising the items, scoring each on Reach, Impact,
+  Confidence and Effort, then emitting the ranked table and the top-three tickets.
+```
+
+It pulls the procedure and **runs it on your backlog**:
+
+```
+# RICE Backlog Ranker
+This is a stack: run the 3 steps below IN ORDER, showing the result and confirming after each.
+
+## Step 1 — Intake & Normalize the Backlog
+Turn a messy paste into a clean, scorable list. Do not rank yet.
+...
+```
+
+You end up with a ranked table and three tickets you can defend in a meeting — not a chat answer you have
+to translate into work.
+
+## The part most tools get wrong
+
+Ask it something it has nothing for:
+
+> *"braise a lamb shoulder so it falls off the bone"*
+
+```
+Nothing here covers this. Not a weak match: not one defining word of that task appears in any
+skill in the library, so anything shown would be a coincidence of wording.
+
+Tell the user plainly that skillstore has no method for this, and carry on with your own approach.
+```
+
+**No ranked list. No near match. Nothing.** Every retrieval system can return five results. Knowing when
+to return zero is the hard part, and it's the difference between a tool your agent trusts and one it
+learns to ignore.
+
+## What's on the shelf
+
+~660 skills. Curated methods for the work that repeats — product discovery, backlog ranking, landing-page
+audits, positioning, SOPs, launch briefs, churn, onboarding audits — plus ~600 community skills indexed
+from their source repos and served under their own licences.
+
+A few real ones:
+
+| you're doing this | you get |
+|---|---|
+| shipping an iOS build | QA + design review, screenshots, then submit or say why you held it |
+| a customer interview tomorrow | the questions, de-biased, and the capture sheet |
+| your landing page isn't converting | a scored audit and ready-to-paste copy |
+| "which features first?" | RICE, scored, with the top three tickets |
+| Xcode build crawling | AvdLee's build-optimisation skills, ranked first |
+| turning a YouTube talk into a method | skillify: transcript in, runnable skill out |
+
+## Four tools
 
 | tool | what it does |
 |---|---|
-| `find_skill` | the task in plain words → the methods that fit, strongest first |
-| `browse_skills` | what is on the shelf, by area |
-| `get_skill` | the full runnable procedure for one id |
-| `rate_skill` | whether it actually worked. This is the only thing that makes the ranking honest |
+| `find_skill` | the task in plain words → the methods that fit |
+| `browse_skills` | what's on the shelf, by area |
+| `get_skill` | the full runnable procedure |
+| `rate_skill` | did it actually work — the only thing that keeps the ranking honest |
 
-## What it says when it has nothing
+## Honest about where it's thin
 
-Most of the value is here rather than in the hits. `find_skill` answers in three bands:
-
-- **strong match** — the library has a method for this
-- **possible** — the candidates are returned *with* the caveat, because below the confidence floor the
-  right answer is still rank 1 about two thirds of the time
-- **nothing here covers this** — no ranked list at all. Not one defining word of your task appears in any
-  skill, so anything shown would be a coincidence of wording
-
-That third band exists because the alternative is worse: a landing-page skill returned for a question about
-braising lamb, at a respectable-looking score.
-
-## Where it is good, and where it is not
-
-Measured, not claimed. On the maintainer's own real queries the top hit is correct **11 of 11** times in
-English, with **0** confident wrong answers. On iOS and React Native tasks — Swift, SwiftUI, Xcode builds,
-Swift Testing, keychain, RN bridging — **11 of 15** land on the right skill, but **6 of 20** tasks get a
-*confident wrong answer*, mostly where no iOS-specific skill exists and something adjacent wins. An
-accessibility question has been answered by a video-processing skill matching on the word "dynamic".
-
-Coverage is deepest in product, growth, ops and writing, and thinner the further you get from those.
+Deepest in product, growth, ops and writing. Strong on Swift, SwiftUI, Xcode and testing. **Thinner around
+the edges of iOS** — ask about TestFlight groups or binary size and it may reach for something adjacent.
+That's measured, not guessed: 11 of 15 covered iOS tasks land right, and 6 of 20 get a confident answer
+they shouldn't. Tell us when it does that and it gets fixed.
 
 ## Privacy
 
-- The task text you search with is **never stored**. Counters only: an enum name and a timestamp.
-- No account, no key, nothing to sign up for.
-- External skills are served from their source repositories under their own licences; where a licence does
-  not permit redistribution, you get a link instead of the text.
+Your query text is **never stored**. Counters only — an enum name and a timestamp. No account, no key,
+nothing to sign up for.
 
-## The diagnosis
+## Also: how many of your own skills can your agent even find?
 
-Separately from the connector, there is a one-minute check over the skills already installed on your
-machine — how many are written so your agent can't reliably fire them. It changes nothing and stores
-nothing: **https://skillstore-jk.fly.dev/diagnose**
+A one-minute check over the skills already installed on your machine. On one real machine, **two thirds of
+1,684 never say when they should *not* fire** — so they get suggested for jobs they were never built for.
+Changes nothing, stores nothing:
 
-## Status
+**https://skillstore-jk.fly.dev/diagnose**
 
-Working and in daily use by its author, with essentially no other users yet. If you try it, the most useful
-thing you can do is say what it got wrong.
+---
+
+Working, in daily use by its author, and short on strangers. If you try it, the most useful thing you can
+do is tell us what it got wrong.
